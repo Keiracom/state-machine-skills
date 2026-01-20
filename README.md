@@ -1,30 +1,35 @@
 # State-Machine Skills for Claude Code
 
-A token-efficient alternative to native SKILL.md files that achieves ~90% context reduction through deterministic CLI routing.
+An experimental alternative to native SKILL.md files that uses deterministic CLI routing for complex workflows.
 
-## The Problem
+## The Theory
 
-Native Claude Skills load ~100 tokens per skill just for metadata scanning. With 140 skills, that's 14,000 tokens before you start working.
+Native Claude Skills scan all SKILL.md files for metadata. With many skills, this *might* consume significant context. This approach loads only the current task on-demand.
 
-## The Solution
+**Caveat:** Token savings are theoretical and not formally measured. Your mileage may vary.
 
-- **JSON state files** track progress (no LLM memory needed)
-- **Python skill files** with structured dicts (not markdown)
-- **CLI router** that outputs only the current task
-- **On-demand instruction generation** via `get_instructions()`
+## What This Actually Solves
 
-## Token Comparison
+Regardless of token efficiency, this pattern provides features native Skills don't have:
 
-| Approach | Baseline | Per Task | Total |
-|----------|----------|----------|-------|
-| Native Skills (140) | ~14,000 | ~3,000 | ~17,000 |
-| This System | ~200 | ~1,500 | ~1,700 |
+- **Approval gates** - Pause between phases, require explicit confirmation
+- **State persistence** - Track progress across sessions in JSON
+- **Session history** - Log what was completed and when
+- **Deterministic ordering** - Tasks execute in defined sequence, not LLM choice
 
-*Measured using Claude's token counter on a real 140-task E2E test workflow. Your results may vary based on skill complexity.*
+## How It Works
+
+1. `CLAUDE.md` points to CLI entry point
+2. User says "continue" → Claude runs `python tools/workflow.py next`
+3. CLI reads `state/process.json`, outputs current task only
+4. Claude reads relevant skill file, executes checks
+5. Claude runs `python tools/workflow.py complete TASK_ID -s "summary"`
+6. State updates, ready for next session
 
 ## Why Approval Gates Matter
 
-Native Skills have no concept of "wait for confirmation before proceeding." This is brutal for:
+Native Skills have no concept of "wait for confirmation before proceeding." This is problematic for:
+
 - Destructive operations (database migrations, file deletions)
 - Multi-phase deployments requiring human verification
 - Workflows where a mistake in phase 1 corrupts phase 2
@@ -38,11 +43,9 @@ With state-machine skills, phases can require explicit approval:
 }
 ```
 
-Claude will stop and wait for you to run `workflow.py approve-phase deployment` before continuing.
-
 ## Enforcing the Pattern
 
-Claude might forget to check the CLI and just start working. Prevent this by adding strict instructions to your `CLAUDE.md`:
+Claude might forget to check the CLI. Add strict instructions to your `CLAUDE.md`:
 
 ```markdown
 ## CRITICAL: Workflow Rules
@@ -61,21 +64,11 @@ python .claude-workflow/tools/workflow.py next
 - Mark complete with summary when done
 ```
 
-This makes the pattern explicit. Claude follows CLAUDE.md instructions reliably.
-
-## How It Works
-
-1. `CLAUDE.md` points to CLI entry point (~200 tokens)
-2. User says "continue" → Claude runs `python tools/workflow.py next`
-3. CLI reads `state/process.json`, outputs current task only
-4. Claude reads relevant skill file, executes checks
-5. Claude runs `python tools/workflow.py complete TASK_ID -s "summary"`
-6. State updates, ready for next session
+**Note:** This isn't bulletproof. Claude may still ignore instructions in long contexts. This is an experiment, not a production-hardened system.
 
 ## Quick Start
 
 ```bash
-# Clone the repo
 git clone https://github.com/Keiracom/state-machine-skills.git
 cd state-machine-skills
 
@@ -102,37 +95,49 @@ your-project/
         └── run_tests.py         # Example skill
 ```
 
-## When to Use This
+## When This Might Help
 
 - Complex multi-phase workflows (E2E testing, migrations, audits)
 - 50+ tasks with state persistence needs
 - Approval gates between phases
 - Session history logging requirements
 
-## When NOT to Use This
+## When to Just Use Native Skills
 
-- Simple, stateless skills
-- Auto-invocation based on natural language matching
-- Cross-platform portability (Claude.ai, API)
+- Simple, stateless utilities
+- You want auto-invocation based on natural language
+- You need cross-platform portability (Claude.ai, API)
+- You have fewer than ~20 skills
 
-## Trade-offs vs Native Skills
+## Trade-offs
 
 | Feature | Native Skills | State-Machine |
 |---------|--------------|---------------|
 | Auto-invocation | ✅ | ❌ |
-| Token efficiency | ❌ | ✅ |
+| Token efficiency | Unknown | Unknown (theoretical) |
 | State persistence | ❌ | ✅ |
 | Approval gates | ❌ | ✅ |
 | Session history | ❌ | ✅ |
 | Portable to claude.ai | ✅ | ❌ |
+| Reliability | Platform-managed | Depends on Claude following instructions |
+
+## Known Limitations
+
+- **No measurements:** Token savings are assumed, not proven
+- **Claude may ignore instructions:** Especially in long contexts
+- **State corruption risk:** If Claude hallucinates a completion, your JSON is wrong
+- **Platform-dependent:** Will break if Anthropic changes how CLAUDE.md works
+- **Overengineered for simple cases:** If you have <20 tasks, this is overkill
+
+## Why Not Just Use X?
+
+- **Git for history?** Fair point. This is more granular but git works.
+- **Prefect/Airflow?** If you need real orchestration, use those. This is for Claude-in-the-loop workflows.
+- **Markdown checklist?** Simpler. Try that first honestly.
 
 ## What If Anthropic Fixes This?
 
-Fair question. If Claude Code's native Skills system adds state persistence, approval gates, and better token efficiency, this approach becomes less necessary.
-
-**The bet:** Complex workflow orchestration isn't Anthropic's priority—they're focused on making Skills easy and discoverable for the average user. Power users with 100+ task workflows are an edge case.
-
-**Worst case:** You migrate back to native Skills. The workflow logic lives in your skill files either way, so the migration cost is low.
+If native Skills add state persistence and approval gates, this becomes unnecessary. That's fine. The workflow logic lives in your skill files either way.
 
 ## License
 
@@ -140,4 +145,4 @@ MIT - Use it however you want.
 
 ## Contributing
 
-PRs welcome. Keep it simple and generic.
+PRs welcome. This is an experiment - feedback on whether the approach even makes sense is appreciated.
