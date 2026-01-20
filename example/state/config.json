@@ -1,0 +1,32 @@
+{
+  "workflow": {
+    "name": "Example Workflow",
+    "version": "1.0.0",
+    "description": "A generic multi-phase workflow template"
+  },
+  "phases": [
+    {
+      "id": "setup",
+      "name": "Setup Phase",
+      "description": "Initialize environment and dependencies",
+      "requires_approval": false
+    },
+    {
+      "id": "execution", 
+      "name": "Execution Phase",
+      "description": "Run the main workflow tasks",
+      "requires_approval": true
+    },
+    {
+      "id": "validation",
+      "name": "Validation Phase", 
+      "description": "Verify results and cleanup",
+      "requires_approval": false
+    }
+  ],
+  "settings": {
+    "auto_advance": false,
+    "log_sessions": true,
+    "state_file": "state/process.json"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "workflow_id": "example-workflow-001",
+  "created_at": "2025-01-20T00:00:00Z",
+  "updated_at": "2025-01-20T00:00:00Z",
+  "current_phase": "setup",
+  "current_task_index": 0,
+  "status": "in_progress",
+  "tasks": [
+    {
+      "id": "SETUP-001",
+      "phase": "setup",
+      "name": "Check Prerequisites",
+      "skill_file": "library/setup_environment.py",
+      "status": "pending",
+      "summary": null,
+      "completed_at": null
+    },
+    {
+      "id": "SETUP-002", 
+      "phase": "setup",
+      "name": "Initialize Configuration",
+      "skill_file": "library/setup_environment.py",
+      "status": "pending",
+      "summary": null,
+      "completed_at": null
+    },
+    {
+      "id": "EXEC-001",
+      "phase": "execution",
+      "name": "Run Primary Task",
+      "skill_file": "library/run_tests.py",
+      "status": "pending",
+      "summary": null,
+      "completed_at": null
+    },
+    {
+      "id": "EXEC-002",
+      "phase": "execution", 
+      "name": "Process Results",
+      "skill_file": "library/run_tests.py",
+      "status": "pending",
+      "summary": null,
+      "completed_at": null
+    },
+    {
+      "id": "VAL-001",
+      "phase": "validation",
+      "name": "Verify Outputs",
+      "skill_file": "library/validation.py",
+      "status": "pending",
+      "summary": null,
+      "completed_at": null
+    }
+  ],
+  "session_history": []
+}
